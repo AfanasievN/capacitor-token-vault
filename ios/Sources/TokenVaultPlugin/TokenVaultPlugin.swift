@@ -23,9 +23,10 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
             "backend": "keychain",
             "secure": true,
             "persistent": true,
-            // The Keychain's own class keys are protected by the Secure Enclave on every
-            // device this plugin supports (A7+); the item itself is file-protection-class
-            // encrypted, which is what "hardware backed" means here.
+            // The item is encrypted with a data-protection class key derived by the
+            // hardware AES engine from the device UID, so it cannot be moved off this
+            // device. That is what the flag claims — not Secure Enclave residency, which
+            // applies to keys rather than payloads.
             "hardwareBacked": true,
         ])
     }

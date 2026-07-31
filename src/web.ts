@@ -7,7 +7,7 @@ import {
   type TokenVaultErrorCode,
   type TokenVaultPlugin,
   type VaultCapabilities,
-} from "./definitions";
+} from "./definitions.js";
 
 const KEY_PREFIX = "token-vault.";
 

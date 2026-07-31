@@ -43,7 +43,7 @@ interface VaultCapabilities {
   secure: boolean;
   /** Survives an app restart. */
   persistent: boolean;
-  /** Key material lives in a TEE / Secure Enclave / StrongBox. */
+  /** Key material is bound to this device's hardware — see the note below; not assumed. */
   hardwareBacked: boolean;
 }
 
@@ -56,6 +56,13 @@ interface TokenVaultPlugin {
   clear(): Promise<void>;
 }
 ```
+
+`hardwareBacked` is **asked of the platform, never assumed**: on Android it comes from
+`KeyInfo.securityLevel` (API 31+) or `isInsideSecureHardware`, so emulators and software-Keystore
+devices report `false`; anything unexpected also reports `false`, because a security claim defaults to
+"no". On iOS it is `true` and means the item is encrypted with a data-protection class key derived by
+the hardware AES engine from the device UID — *not* Secure Enclave residency, which applies to keys
+rather than payloads.
 
 `getCapabilities()` is what makes the web story honest: a caller can see it got
 `{backend: "session-storage", secure: false, persistent: false}` and decide (our app: keep using it,
@@ -88,6 +95,20 @@ Notes that drove these choices:
   "all platforms" get working behavior everywhere, and the ones that care read `capabilities.secure`.
   Returning `Unavailable` on web would push every consumer into writing the same fallback.
 
+## Inherited tokens after a reinstall
+
+iOS keeps Keychain items when an app is deleted: the iOS 10.3 beta change that removed them was rolled
+back, and Apple has never documented the behavior. A freshly installed app can therefore read a token
+written by a previous installation — plausibly by a different person, on a resold or shared device.
+
+The plugin refuses to hand that back. Every write also stores a marker in `UserDefaults`, which *is*
+removed with the app; a stored token without a matching marker is treated as absent and cleared, so the
+app asks for a fresh sign-in. Android needs none of this — its preferences file goes away with the app.
+
+This is deliberately handled in the library rather than documented as a caveat: every consumer would
+otherwise have to rediscover it, and the failure mode (resuming a stranger's session) is bad enough
+that "read the README" is not an acceptable mitigation.
+
 ## Threat model (what this does and does not buy)
 
 Protects against: another app or a shell on a rooted/jailbroken device reading tokens off disk;
@@ -105,8 +126,10 @@ supply-chain problem, and the README says so instead of implying more.
   Tink, no Gradle plugins beyond the Android one.
 - iOS: SPM target and a podspec, both depending only on `Capacitor` itself; no external Swift
   packages.
-- Build: `tsc` only — the published artifact is ESM + `.d.ts`. No bundler, so no bundler
-  dependency chain. Consumers are bundlers themselves (Vite/webpack) and handle ESM natively.
+- Build: `tsc` only — twice, emitting ESM (`dist/`) and CommonJS (`dist/cjs/`, marked with a
+  four-line generated `package.json`). No bundler, so no bundler dependency chain. Relative imports
+  carry `.js` extensions and `moduleResolution: NodeNext` enforces it, because ESM output with
+  extensionless imports loads in bundlers but **not** in Node — a trap worth closing at the compiler.
 - devDependencies are limited to `typescript`, `vitest` and `@capacitor/core` (types). They never
   reach a consumer's install.
 
@@ -116,8 +139,8 @@ supply-chain problem, and the README says so instead of implying more.
 | --- | --- |
 | Web implementation | vitest unit tests (storage present, storage throwing, memory fallback, name validation, capability reporting) |
 | Contract | `tsc --noEmit` in the library + a consumer smoke import |
-| iOS | XCTest against the Keychain wrapper on a simulator: set/get/remove, overwrite, attribute assertions (`kSecAttrAccessible`, `synchronizable`) |
-| Android | instrumented test (Keystore needs a device/emulator): set/get/remove, key survives process restart, ciphertext differs per write (randomized IV) |
+| iOS | XCTest against the real Keychain on a simulator destination (`xcodebuild test -destination 'platform=iOS Simulator,…'` — `swift test` builds for macOS and will not do): set/get/remove, overwrite, attribute assertions (`kSecAttrAccessible`, `synchronizable`), and the previous-installation guard |
+| Android | instrumented test (Keystore needs a device/emulator): set/get/remove, key survives process restart, ciphertext differs per write (randomized IV), plaintext absent from the stored value, `hardwareBacked` matches an independently queried `KeyInfo` |
 | End to end | consumed by an app, verified with Maestro: sign in → kill → relaunch → still signed in |
 
 Native tests need a device/emulator, so CI runs the web layer and typecheck on every push, and the

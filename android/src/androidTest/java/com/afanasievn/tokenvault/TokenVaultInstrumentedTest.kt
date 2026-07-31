@@ -92,6 +92,30 @@ class TokenVaultInstrumentedTest {
         assert(stored != null && !stored.contains(secret))
     }
 
+    /**
+     * hardwareBacked must report what the Keystore says — not a constant. Emulators
+     * typically answer false, real devices true, so the assertion is "matches an
+     * independently asked platform", which is what catches a regression to `true`.
+     */
+    @Test
+    fun hardwareBackedMatchesTheKeystore() {
+        vault.set("refresh", "rt")
+
+        val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val key = (keyStore.getEntry("capacitor.token-vault.v1", null) as java.security.KeyStore.SecretKeyEntry).secretKey
+        val info = javax.crypto.SecretKeyFactory
+            .getInstance(key.algorithm, "AndroidKeyStore")
+            .getKeySpec(key, android.security.keystore.KeyInfo::class.java) as android.security.keystore.KeyInfo
+        val expected = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            info.securityLevel == android.security.keystore.KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
+                info.securityLevel == android.security.keystore.KeyProperties.SECURITY_LEVEL_STRONGBOX
+        } else {
+            @Suppress("DEPRECATION") info.isInsideSecureHardware
+        }
+
+        assertEquals(expected, vault.isHardwareBacked())
+    }
+
     @Test(expected = TokenVaultException::class)
     fun rejectsMalformedName() {
         vault.set("bad name!", "rt")

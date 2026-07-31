@@ -5,16 +5,31 @@ import XCTest
 /// Runs against the real Keychain on a simulator: the attributes are the point of this
 /// plugin, so asserting them is the test that matters.
 final class TokenVaultTests: XCTestCase {
-    private let vault = TokenVault(bundleIdentifier: "com.afanasievn.tokenvault.tests")
+    /// A UserDefaults suite per test run stands in for "this installation" so the
+    /// reinstall behavior can be exercised without deleting the app.
+    private var suiteName: String!
+    private var defaults: UserDefaults!
+    private var vault: TokenVault!
 
     override func setUp() {
         super.setUp()
+        suiteName = "com.afanasievn.tokenvault.tests.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+        vault = TokenVault(bundleIdentifier: "com.afanasievn.tokenvault.tests", defaults: defaults)
         try? vault.clear()
     }
 
     override func tearDown() {
         try? vault.clear()
+        defaults.removePersistentDomain(forName: suiteName)
         super.tearDown()
+    }
+
+    /// Simulates a reinstall: the app's UserDefaults are gone, the Keychain item is not.
+    private func freshInstallation() -> TokenVault {
+        defaults.removePersistentDomain(forName: suiteName)
+        let reinstalled = UserDefaults(suiteName: suiteName)!
+        return TokenVault(bundleIdentifier: "com.afanasievn.tokenvault.tests", defaults: reinstalled)
     }
 
     func testRoundTrip() throws {
@@ -64,6 +79,28 @@ final class TokenVaultTests: XCTestCase {
         XCTAssertThrowsError(try vault.set(name: "refresh", value: "")) { error in
             XCTAssertEqual((error as? TokenVaultError)?.code, "INVALID_ARGUMENT")
         }
+    }
+
+    /// iOS keeps Keychain items across app deletion, so a fresh install must not resume a
+    /// session it never created — possibly a different person's on a resold device.
+    func testTokenFromAPreviousInstallationIsNotReturned() throws {
+        try vault.set(name: "refresh", value: "rt-of-previous-install")
+
+        let reinstalled = freshInstallation()
+
+        XCTAssertNil(try reinstalled.get(name: "refresh"))
+        // …and the inherited item is gone, not merely hidden.
+        XCTAssertNil(try vault.get(name: "refresh"))
+    }
+
+    /// The flip side: within one installation the token must survive a new instance
+    /// (that is the whole point of persisting it).
+    func testTokenSurvivesWithinTheSameInstallation() throws {
+        try vault.set(name: "refresh", value: "rt")
+
+        let sameInstall = TokenVault(bundleIdentifier: "com.afanasievn.tokenvault.tests", defaults: defaults)
+
+        XCTAssertEqual(try sameInstall.get(name: "refresh"), "rt")
     }
 
     /// The security posture itself: device-only accessibility (⇒ not in backups) and no

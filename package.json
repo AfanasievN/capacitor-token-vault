@@ -1,7 +1,7 @@
 {
   "name": "capacitor-token-vault",
   "version": "0.1.0",
-  "description": "Capacitor plugin that keeps auth tokens in the platform's safest store — iOS Keychain, Android Keystore, sessionStorage on the web. Zero runtime dependencies.",
+  "description": "Capacitor plugin that keeps auth tokens in the platform's safest store \u2014 iOS Keychain, Android Keystore, sessionStorage on the web. Zero runtime dependencies.",
   "author": "AfanasievN (https://github.com/AfanasievN)",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js",
       "default": "./dist/index.js"
     }
   },
@@ -34,7 +36,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

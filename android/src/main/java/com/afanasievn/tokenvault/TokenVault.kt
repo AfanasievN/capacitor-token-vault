@@ -2,13 +2,16 @@ package com.afanasievn.tokenvault
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 
 /**
@@ -78,6 +81,28 @@ class TokenVault(context: Context) {
     /** Removes every slot. The Keystore key is kept: a new sign-in reuses it. */
     fun clear() {
         prefs.edit().clear().apply()
+    }
+
+    /**
+     * Whether the key protecting the tokens is held in secure hardware (TEE or StrongBox).
+     * Asked of the platform, never assumed: on emulators and on devices with a software
+     * Keystore this is genuinely `false`, and a caller that branches on it must not be
+     * told otherwise. Anything unexpected also yields `false` — a security claim defaults
+     * to "no".
+     */
+    fun isHardwareBacked(): Boolean = try {
+        val key = secretKey()
+        val factory = SecretKeyFactory.getInstance(key.algorithm, KEYSTORE_PROVIDER)
+        val info = factory.getKeySpec(key, KeyInfo::class.java) as KeyInfo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            info.securityLevel == KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT ||
+                info.securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX
+        } else {
+            @Suppress("DEPRECATION")
+            info.isInsideSecureHardware
+        }
+    } catch (e: Exception) {
+        false
     }
 
     private fun secretKey(): SecretKey {

@@ -19,15 +19,18 @@ class TokenVaultPlugin : Plugin() {
 
     @PluginMethod
     fun getCapabilities(call: PluginCall) {
-        val result = JSObject().apply {
-            put("backend", "keystore")
-            put("secure", true)
-            put("persistent", true)
-            // AES keys in AndroidKeyStore are held by the TEE (or StrongBox) on every
-            // device this plugin supports; the key bytes never enter app memory.
-            put("hardwareBacked", true)
+        // Asks the Keystore rather than assuming: emulators and devices with a software
+        // Keystore report false, and lying here would let a caller believe a guarantee the
+        // device does not provide. Resolving this creates the key if it does not exist yet
+        // (it would be created on the first write anyway).
+        run(call) {
+            JSObject().apply {
+                put("backend", "keystore")
+                put("secure", true)
+                put("persistent", true)
+                put("hardwareBacked", vault.isHardwareBacked())
+            }
         }
-        call.resolve(result)
     }
 
     @PluginMethod

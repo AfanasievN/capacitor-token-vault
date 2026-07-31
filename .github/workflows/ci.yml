@@ -49,9 +49,15 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      # Hits the real Keychain: round-trip plus the accessibility / synchronizable
-      # attributes that are the whole point of the plugin.
-      - run: swift test
+      # Hits the real Keychain: round-trip, the accessibility / synchronizable attributes
+      # that are the whole point of the plugin, and the previous-installation guard.
+      # A simulator destination is required — `swift test` would build for macOS.
+      - name: test on an iOS simulator
+        run: |
+          xcodebuild test \
+            -scheme CapacitorTokenVault \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            | xcpretty || exit ${PIPESTATUS[0]}
 
   android:
     name: Android (Keystore, instrumented)

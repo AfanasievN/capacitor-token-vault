@@ -65,6 +65,21 @@ pointless):
 Want backups on? Use a `dataExtractionRules` exclusion for `token_vault.xml` instead. **iOS needs
 nothing** — `WhenUnlockedThisDeviceOnly` items are never included in a backup.
 
+## Compatibility
+
+| | Supported |
+| --- | --- |
+| Capacitor | **8.x** (`@capacitor/core` is a peer dependency, `>=8.0.0`) |
+| iOS | 14.0+ · SPM (a podspec is included for CocoaPods projects) |
+| Android | API 23+ (Android 6) · compileSdk 36 · JDK 21 |
+| Web | any browser with `sessionStorage`; degrades to memory without it |
+| Node (tooling) | 20, 22, 24 — tested in CI |
+| Module formats | ESM **and** CommonJS (`import` and `require` both work) |
+
+Capacitor 6/7 are not supported: the plugin uses the `CAPBridgedPlugin` registration introduced for
+Capacitor 6+ and is only tested against 8. If you need an older major, open an issue — the native
+code itself has no version-specific dependencies.
+
 ## Usage
 
 ```ts
@@ -101,6 +116,35 @@ Slot names match `^[a-zA-Z0-9._-]{1,64}$`. Rejections carry `code`:
 | `removeToken({name?})` | idempotent delete |
 | `clear()` | removes every slot owned by this plugin |
 
+## Migrating from another plugin
+
+The API is small, so a migration is a one-time copy on first launch. Read with the old plugin, write
+with this one, delete the old value:
+
+```ts
+import {Preferences} from "@capacitor/preferences";        // or your current plugin
+import {TokenVault} from "capacitor-token-vault";
+
+async function migrateToken(): Promise<void> {
+  if ((await TokenVault.getToken()).value !== null) return;   // already migrated
+
+  const {value} = await Preferences.get({key: "refreshToken"});
+  if (!value) return;
+
+  await TokenVault.setToken({value});
+  await Preferences.remove({key: "refreshToken"});           // stop leaving a plaintext copy
+}
+```
+
+| Coming from | Notes |
+| --- | --- |
+| `@capacitor/preferences`, `localStorage` | the old value is plaintext — remove it after copying, as above |
+| `capacitor-secure-storage-plugin` | `get`/`set`/`remove` map 1:1; its iOS items live under a different Keychain service, so read them with that plugin during the migration window |
+| `@aparajita/capacitor-secure-storage` | same shape; if you only stored a token, you can drop that dependency (and the two Capacitor plugins it pulls in) afterwards |
+
+Keep the migration for a release or two, then delete it — a user who skips versions still passes
+through it as long as the code is there.
+
 ## What each platform actually does
 
 | Platform | Where the token goes | Fixed parameters |
@@ -122,6 +166,43 @@ Why these choices, in short — the long version is in [docs/DESIGN.md](docs/DES
   behavior everywhere and the ones who care read `capabilities.secure`.
 - **A corrupt or undecryptable slot reads as "absent"** on every platform: broken storage must never
   lock a user out of signing in again.
+- **A token written by a previous installation is not returned.** iOS keeps Keychain items when an app
+  is deleted, so a fresh install can find someone else's token on a resold or shared device. The
+  plugin writes a marker into `UserDefaults` — which *is* removed with the app — and treats a token
+  without a matching marker as absent, clearing it. Android needs nothing: its store goes away with
+  the app.
+
+## FAQ
+
+**Should I store the access token here too?**
+Usually no. Keep the access token in memory and only persist the refresh token: a short-lived token
+in memory cannot be stolen from disk at all. Named slots exist if you genuinely need a second secret.
+
+**Can I store a JSON pair?**
+Yes — `setToken({value: JSON.stringify(pair)})`. The plugin deliberately does not parse your payload;
+it stores an opaque string.
+
+**Why does `secure` report `false` on the web?**
+Because no browser has a secure store. The plugin uses `sessionStorage` (tab-scoped, the smallest
+window) and never `localStorage`, and tells you the truth so you can decide what to promise the user.
+
+**What happens after an app reinstall?**
+Nothing is inherited: see the note above. Plan for the user to sign in again.
+
+**What about biometrics / "require Face ID to read the token"?**
+Not in v1 — it changes the failure surface (enrollment invalidation, cancel flows) and belongs to a
+session-policy layer. The design leaves room for an opt-in `requireUserPresence` without changing the
+stored format; open an issue if you need it.
+
+**Is `hardwareBacked` always true on Android?**
+No. It is asked of the Keystore per key, so emulators and devices with a software Keystore report
+`false`. Branch on the value rather than assuming it.
+
+**Does it work with `require()` / Jest?**
+Yes — the package ships ESM and CommonJS, and CI loads both.
+
+**Does it need any permissions?**
+No. The Android manifest is empty and iOS needs no entitlement (no Keychain sharing, no iCloud).
 
 ## Threat model
 
@@ -150,13 +231,24 @@ access to your token store.
 
 ```bash
 npm install
-npm run verify        # typecheck + web unit tests + build
-swift test            # iOS: real Keychain, asserts the item attributes
+npm run verify        # typecheck + web unit tests + dual (ESM + CJS) build
+```
+
+iOS tests hit the real Keychain, so they need an iOS simulator destination — `swift test` builds for
+macOS and will not do:
+
+```bash
+xcodebuild test -scheme CapacitorTokenVault \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
 Android instrumented tests need a device or emulator and a host app
 (`./gradlew connectedAndroidTest`) — `AndroidKeyStore` has no JVM implementation, so a Robolectric
 test would prove nothing about the part that matters.
+
+Status, honestly: the web layer and the packaging are covered by CI on every push; the native suites
+are written but have not been run yet (that is what the first CI run on this repo will tell us).
+Wiring the Android emulator job is a [good first contribution](CONTRIBUTING.md).
 
 The native suites are the security tests: on iOS they assert the accessibility and sync attributes;
 on Android that a second instance decrypts what the first wrote, that ciphertext differs per write

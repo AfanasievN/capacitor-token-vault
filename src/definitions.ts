@@ -27,7 +27,18 @@ export interface VaultCapabilities {
   secure: boolean;
   /** The value survives an app (or tab) restart. */
   persistent: boolean;
-  /** Key material lives in a TEE / Secure Enclave / StrongBox. */
+  /**
+   * The key protecting the value is bound to this device's hardware and cannot be
+   * extracted from it.
+   *
+   * - **Android**: asked of the Keystore per key (`KeyInfo.securityLevel` on API 31+,
+   *   `isInsideSecureHardware` below that). Genuinely `false` on emulators and on devices
+   *   with a software Keystore — branch on the value, do not assume `true`.
+   * - **iOS**: `true`. The item is encrypted with a data-protection class key that the
+   *   hardware AES engine derives from the device UID; note that this is *not* the same as
+   *   living inside the Secure Enclave, which holds keys rather than arbitrary payloads.
+   * - **Web**: always `false`.
+   */
   hardwareBacked: boolean;
 }
 
