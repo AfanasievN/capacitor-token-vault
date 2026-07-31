@@ -3,10 +3,42 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  web:
+    name: web + contract (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  dependency-budget:
+    name: zero runtime dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "hello"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: assert the production dependency tree is empty
+        run: |
+          tree="$(npm ls --omit=dev --all --parseable | tail -n +2)"
+          if [ -n "$tree" ]; then
+            echo "unexpected runtime dependencies:"; echo "$tree"; exit 1
+          fi
+          echo "production dependency tree is empty"
