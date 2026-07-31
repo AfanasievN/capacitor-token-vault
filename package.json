@@ -1,0 +1,53 @@
+{
+  "name": "capacitor-token-vault",
+  "version": "0.1.0",
+  "description": "Capacitor plugin that keeps auth tokens in the platform's safest store — iOS Keychain, Android Keystore, sessionStorage on the web. Zero runtime dependencies.",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "ios/Sources/",
+    "ios/Tests/",
+    "Package.swift",
+    "android/src/main/",
+    "android/build.gradle",
+    "CapacitorTokenVault.podspec",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "keywords": ["capacitor", "plugin", "keychain", "keystore", "token", "auth", "secure-storage"],
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/core": "^8.4.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

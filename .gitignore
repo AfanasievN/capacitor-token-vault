@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.build/
+android/build/
+android/.gradle/
+ios/.build/
+coverage/
