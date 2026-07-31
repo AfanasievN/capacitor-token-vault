@@ -11,7 +11,7 @@ Surveyed alternatives (July 2026) each fail one requirement:
 | --- | --- |
 | `@capacitor/preferences` | plain `UserDefaults` / `SharedPreferences` — a token there is a plaintext file |
 | `capacitor-secure-storage-plugin` | no control over Keychain accessibility or iCloud sync; pre-1.0 |
-| `@aparajita/capacitor-secure-storage` | has the right Keychain API, but drags `@capacitor/app` + `@capacitor/keyboard` into the native build and stores arbitrary key/value data |
+| `@aparajita/capacitor-secure-storage` | a capable general-purpose store with the right Keychain API; different scope (arbitrary key/value) and, as published, it lists `@capacitor/app` + `@capacitor/keyboard` as dependencies, so `cap sync` links plugins a token store does not need |
 | `androidx.security` EncryptedSharedPreferences | deprecated since `security-crypto:1.1.0-alpha07` (main-thread performance, OEM keyset corruption) |
 
 The requirements that survive: **explicit** Keychain accessibility, iCloud sync off, no backup

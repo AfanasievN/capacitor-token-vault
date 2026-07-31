@@ -2,7 +2,16 @@
   "name": "capacitor-token-vault",
   "version": "0.1.0",
   "description": "Capacitor plugin that keeps auth tokens in the platform's safest store — iOS Keychain, Android Keystore, sessionStorage on the web. Zero runtime dependencies.",
-  "license": "SEE LICENSE IN LICENSE",
+  "author": "AfanasievN (https://github.com/AfanasievN)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AfanasievN/capacitor-token-vault.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AfanasievN/capacitor-token-vault/issues"
+  },
+  "homepage": "https://github.com/AfanasievN/capacitor-token-vault#readme",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -28,9 +37,24 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "verify": "pnpm typecheck && pnpm test && pnpm build"
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm run test && npm run build"
   },
-  "keywords": ["capacitor", "plugin", "keychain", "keystore", "token", "auth", "secure-storage"],
+  "keywords": [
+    "capacitor",
+    "capacitor-plugin",
+    "keychain",
+    "keystore",
+    "secure-storage",
+    "token",
+    "auth",
+    "refresh-token",
+    "ios",
+    "android",
+    "owasp",
+    "masvs",
+    "zero-dependencies"
+  ],
   "capacitor": {
     "ios": {
       "src": "ios"
@@ -46,6 +70,10 @@
     "@capacitor/core": "^8.4.2",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=20"

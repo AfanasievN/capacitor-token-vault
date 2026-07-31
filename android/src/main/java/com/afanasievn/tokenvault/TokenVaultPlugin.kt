@@ -1,4 +1,4 @@
-package id.mychili.tokenvault
+package com.afanasievn.tokenvault
 
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin

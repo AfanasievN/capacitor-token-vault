@@ -1,4 +1,4 @@
-package id.mychili.tokenvault
+package com.afanasievn.tokenvault
 
 import android.content.Context
 import android.content.SharedPreferences

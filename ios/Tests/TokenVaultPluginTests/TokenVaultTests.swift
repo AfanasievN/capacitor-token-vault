@@ -5,7 +5,7 @@ import XCTest
 /// Runs against the real Keychain on a simulator: the attributes are the point of this
 /// plugin, so asserting them is the test that matters.
 final class TokenVaultTests: XCTestCase {
-    private let vault = TokenVault(bundleIdentifier: "id.mychili.tokenvault.tests")
+    private let vault = TokenVault(bundleIdentifier: "com.afanasievn.tokenvault.tests")
 
     override func setUp() {
         super.setUp()
@@ -73,7 +73,7 @@ final class TokenVaultTests: XCTestCase {
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "id.mychili.tokenvault.tests.token-vault",
+            kSecAttrService as String: "com.afanasievn.tokenvault.tests.token-vault",
             kSecAttrAccount as String: "refresh",
             kSecUseDataProtectionKeychain as String: true,
             kSecReturnAttributes as String: true,
