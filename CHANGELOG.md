@@ -33,3 +33,19 @@ All notable changes to this project are documented here. The format follows
   session. Covered by two new XCTest cases.
 - README: compatibility matrix, migration guide from `@capacitor/preferences` and the other
   secure-storage plugins, and a FAQ.
+
+### Added
+- `docs/INTEGRATION.md`: three integration shapes (direct, behind your own port/DI, HTTP interceptor
+  with single-flight refresh), session restore on boot, SSR/Jest/named-slot notes, and the platform
+  setup steps a plugin cannot perform itself.
+- `docs/AI.md`: copy-paste prompts for wiring the plugin with an agent, adding refresh-on-401,
+  migrating from another plugin, and auditing existing token handling — each stating the rules agents
+  usually break (persisting the access token, logging out on transient errors, branching on platform
+  instead of capabilities).
+- `llms.txt` at the repository root: the whole contract, rules, per-platform behavior and threat model
+  in one machine-readable page, shipped in the npm tarball as well.
+- README: architecture diagram of the bridge, "How it works", "Integrating into your project".
+
+### Changed
+- README FAQ entries are now headings, so each has an anchor and can be linked and extracted; internal
+  document links are absolute, which keeps them working when the README is rendered on npm.

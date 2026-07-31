@@ -1,0 +1,95 @@
+# capacitor-token-vault
+
+> Capacitor plugin that stores an auth token (in practice: the refresh token) in the safest store each
+> platform provides — iOS Keychain, Android Keystore-encrypted app-private storage, sessionStorage on
+> the web — behind five methods, with zero runtime dependencies. MIT. Capacitor 8+.
+
+This file is the machine-readable summary of the whole library: contract, guarantees, and the rules a
+consumer must follow. If you are an agent wiring this into an app, everything you need is here.
+
+## Install
+
+```
+npm install capacitor-token-vault
+npx cap sync
+```
+
+Then two steps the plugin cannot do itself:
+1. `capacitor.config.ts` → `includePlugins: ["capacitor-token-vault"]` (Capacitor otherwise links
+   every plugin it finds in node_modules).
+2. Android: keep the store out of cloud backups — `android:allowBackup="false"` in the app manifest,
+   or a `dataExtractionRules` exclusion for `token_vault.xml`. iOS needs nothing.
+
+## API
+
+```ts
+import {TokenVault} from "capacitor-token-vault";
+
+getCapabilities(): Promise<{
+  backend: "keychain" | "keystore" | "session-storage" | "memory";
+  secure: boolean;        // false on web — no browser has a secure store
+  persistent: boolean;    // false in a browser tab (session = tab) and in memory fallback
+  hardwareBacked: boolean;// Android: asked of the Keystore, false on emulators; iOS: true; web: false
+}>;
+setToken(options: {value: string; name?: string}): Promise<void>;
+getToken(options?: {name?: string}): Promise<{value: string | null}>;   // null = empty, NOT an error
+removeToken(options?: {name?: string}): Promise<void>;                  // idempotent
+clear(): Promise<void>;                                                // every slot; use on logout
+```
+
+- Slot `name` defaults to `"refresh"` and must match `^[a-zA-Z0-9._-]{1,64}$`.
+- `value` is an opaque non-empty string. Serialize yourself if you need a pair.
+- Rejections carry `code`: `UNAVAILABLE` | `INVALID_ARGUMENT` | `STORAGE_FAILURE`. No error message
+  ever contains a token value.
+- Ships ESM and CommonJS; `import` and `require` both work.
+
+## Rules for consumers (these are the ones that get violated)
+
+1. **Persist only the refresh token.** The access token stays in memory. Never put it in the vault,
+   never in localStorage.
+2. **Nothing but tokens goes in here.** Not profile data, not caches, not PII.
+3. **Branch on `getCapabilities()`, never on the platform name.** `persistent: false` (browser tab,
+   private mode) means the UI must not promise "stay signed in".
+4. **A transient refresh failure must not log the user out.** Clear the vault only when the refresh
+   endpoint answers 401 (the refresh token is dead). Network errors and 5xx keep the session.
+5. **Single-flight your refresh.** N concurrent 401s must cause one refresh and one retry each.
+6. **`{value: null}` is normal.** Empty slot, new browser tab, or a token inherited from a previous
+   install — all resolve to null. Route to sign-in, do not raise an error.
+
+## What each platform does
+
+| Platform | Where the token goes | Fixed parameters |
+|---|---|---|
+| iOS 14+ | Keychain, `kSecClassGenericPassword`, service `<bundleId>.token-vault`, account = slot name | `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` (also excludes it from backups), `kSecAttrSynchronizable = false`, `kSecUseDataProtectionKeychain = true` |
+| Android 6+ (API 23) | AES-256-GCM ciphertext in `SharedPreferences("token_vault", MODE_PRIVATE)` | key `capacitor.token-vault.v1` generated in `AndroidKeyStore`, GCM/NoPadding, 256-bit, randomized IV per write, no user-auth requirement |
+| Web / PWA | `sessionStorage` under prefix `token-vault.`; in-process Map when storage is blocked | reports `secure: false`; `localStorage` is never used |
+
+## Behavior worth knowing
+
+- **A corrupt or undecryptable slot reads as `null`** and is cleared. Broken storage must never lock a
+  user out of signing in again.
+- **A token from a previous installation is never returned.** iOS keeps Keychain items when an app is
+  deleted, so the plugin marks each write in UserDefaults (which *is* removed with the app) and
+  discards any token whose marker is missing — a fresh install cannot resume a stranger's session.
+- **`clear()` removes every slot** but keeps the installation marker.
+- **No permissions and no entitlements** are required on either platform.
+
+## Threat model
+
+Protects against: another app or a shell on a rooted/jailbroken device reading the token off disk; the
+token surviving in a device backup and being restored onto another device; iCloud Keychain sync
+carrying it elsewhere.
+
+Does **not** protect against: code execution inside the host app (WebView XSS, malicious dependency) —
+such code can call `getToken()` like yours can. Strict CSP and supply-chain hygiene are the controls
+there. Also out of scope: a compromised OS, the web target (no browser secure store), and token
+lifetime/revocation, which are server-side concerns.
+
+## Docs
+
+- README: https://github.com/AfanasievN/capacitor-token-vault#readme
+- Integration patterns (direct / behind a port / refresh interceptor): https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/INTEGRATION.md
+- AI prompts for wiring, migration and auditing: https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/AI.md
+- Design rationale and non-goals: https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md
+- Security policy and reporting: https://github.com/AfanasievN/capacitor-token-vault/blob/main/SECURITY.md
+- Source: https://github.com/AfanasievN/capacitor-token-vault

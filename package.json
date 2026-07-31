@@ -32,6 +32,8 @@
     "android/src/main/",
     "android/build.gradle",
     "CapacitorTokenVault.podspec",
+    "docs/",
+    "llms.txt",
     "README.md",
     "LICENSE"
   ],

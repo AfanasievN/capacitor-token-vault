@@ -6,13 +6,17 @@
 [![runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](#zero-dependencies-and-why-it-matters)
 [![Capacitor](https://img.shields.io/badge/Capacitor-8%2B-119EFF)](https://capacitorjs.com)
 [![platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web-lightgrey)](#what-each-platform-actually-does)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/AfanasievN/capacitor-token-vault/blob/main/LICENSE)
 
-**Keeps an auth token in the safest place each platform offers** — iOS Keychain, Android Keystore,
-`sessionStorage` on the web — behind five methods and **zero runtime dependencies**.
+**Where do you keep a refresh token in a Capacitor app?** Not in `localStorage`. This is **secure
+storage** scoped to one job: it keeps the token in the safest store each platform offers — **iOS
+Keychain**, **Android Keystore**, `sessionStorage` on the web — behind five methods, with **zero
+runtime dependencies**.
 
-[Quick start](#quick-start) · [What each platform does](#what-each-platform-actually-does) ·
-[Threat model](#threat-model) · [Design notes](docs/DESIGN.md) · [Contributing](CONTRIBUTING.md)
+[Quick start](#quick-start) · [Integration patterns](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/INTEGRATION.md) ·
+[AI prompts](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/AI.md) · [Compatibility](#compatibility) ·
+[What each platform does](#what-each-platform-actually-does) · [Threat model](#threat-model) ·
+[FAQ](#faq) · [Design notes](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md)
 
 ```ts
 await TokenVault.setToken({value: refreshToken});
@@ -64,6 +68,47 @@ pointless):
 
 Want backups on? Use a `dataExtractionRules` exclusion for `token_vault.xml` instead. **iOS needs
 nothing** — `WhenUnlockedThisDeviceOnly` items are never included in a backup.
+
+## How it works
+
+```
+      your code
+          │  setToken / getToken / removeToken / clear / getCapabilities
+          ▼
+   registerPlugin("TokenVault")            picks the implementation, 13 lines
+          │
+    ┌─────┴───────────────┬────────────────────────────┐
+    ▼                     ▼                            ▼
+  iOS bridge          Android bridge                 web
+  TokenVaultPlugin    TokenVaultPlugin               TokenVaultWeb
+    │ argument            │ argument                   │
+    │ plumbing only       │ plumbing only              │
+    ▼                     ▼                            ▼
+  TokenVault.swift    TokenVault.kt                  sessionStorage
+  SecItemAdd/Copy     Keystore key + AES-GCM         (memory fallback)
+    │                     │                            │
+    ▼                     ▼                            ▼
+  Keychain            SharedPreferences              browser storage
+  WhenUnlocked        (ciphertext only)              secure: false
+  ThisDeviceOnly      key never leaves TEE
+```
+
+The bridge files are argument plumbing only, so the platform code is unit-testable without Capacitor.
+Your app talks to one API and never branches on the platform — it branches on `getCapabilities()`.
+
+Total: ~690 lines of code, ~100 of them per native platform. The value is not the volume — it is which
+flags get passed. See [docs/DESIGN.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md).
+
+## Integrating into your project
+
+Three shapes, depending on how your app is built — direct in an auth service, behind your own
+port/DI, or wrapped in an HTTP interceptor with single-flight refresh. Full working examples:
+**[docs/INTEGRATION.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/INTEGRATION.md)**.
+
+Using an AI agent to wire it up? **[docs/AI.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/AI.md)** has copy-paste prompts that adapt to your
+architecture and state the security rules an agent tends to get wrong (persisting the access token,
+logging users out on a network blip, branching on the platform instead of capabilities). Agents that
+read URLs can start from [`llms.txt`](https://github.com/AfanasievN/capacitor-token-vault/blob/main/llms.txt).
 
 ## Compatibility
 
@@ -153,7 +198,7 @@ through it as long as the code is there.
 | **Android 6+ (API 23)** | AES-256-GCM ciphertext in `SharedPreferences("token_vault", MODE_PRIVATE)` | key `capacitor.token-vault.v1` generated in `AndroidKeyStore`, GCM, no padding, 256-bit, randomized IV per write, no user-auth requirement |
 | **Web / PWA** | `sessionStorage` under `token-vault.`, in-memory when storage is blocked | reports `secure: false`; `localStorage` is never used |
 
-Why these choices, in short — the long version is in [docs/DESIGN.md](docs/DESIGN.md):
+Why these choices, in short — the long version is in [docs/DESIGN.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md):
 
 - **`WhenUnlockedThisDeviceOnly`** is the only Keychain class that both requires an unlocked device
   *and* is excluded from backup/restore onto another device. Cost: background code cannot read the
@@ -174,34 +219,34 @@ Why these choices, in short — the long version is in [docs/DESIGN.md](docs/DES
 
 ## FAQ
 
-**Should I store the access token here too?**
+### Should I store the access token here too?
 Usually no. Keep the access token in memory and only persist the refresh token: a short-lived token
 in memory cannot be stolen from disk at all. Named slots exist if you genuinely need a second secret.
 
-**Can I store a JSON pair?**
+### Can I store a JSON pair?
 Yes — `setToken({value: JSON.stringify(pair)})`. The plugin deliberately does not parse your payload;
 it stores an opaque string.
 
-**Why does `secure` report `false` on the web?**
+### Why does `secure` report `false` on the web?
 Because no browser has a secure store. The plugin uses `sessionStorage` (tab-scoped, the smallest
 window) and never `localStorage`, and tells you the truth so you can decide what to promise the user.
 
-**What happens after an app reinstall?**
+### What happens after an app reinstall?
 Nothing is inherited: see the note above. Plan for the user to sign in again.
 
-**What about biometrics / "require Face ID to read the token"?**
+### Does it support biometrics (Face ID / fingerprint) to read the token?
 Not in v1 — it changes the failure surface (enrollment invalidation, cancel flows) and belongs to a
 session-policy layer. The design leaves room for an opt-in `requireUserPresence` without changing the
 stored format; open an issue if you need it.
 
-**Is `hardwareBacked` always true on Android?**
+### Is `hardwareBacked` always true on Android?
 No. It is asked of the Keystore per key, so emulators and devices with a software Keystore report
 `false`. Branch on the value rather than assuming it.
 
-**Does it work with `require()` / Jest?**
+### Does it work with `require()` and Jest (CommonJS)?
 Yes — the package ships ESM and CommonJS, and CI loads both.
 
-**Does it need any permissions?**
+### Does it need any permissions?
 No. The Android manifest is empty and iOS needs no entitlement (no Keychain sharing, no iCloud).
 
 ## Threat model
@@ -212,7 +257,7 @@ carrying it to another device.
 
 **Does not protect against:** code execution inside your app — XSS in the WebView or a malicious
 dependency can call `getToken()` exactly like your code does. Strict CSP and supply-chain hygiene are
-the controls there; storage choice only limits theft *at rest*. Full statement: [SECURITY.md](SECURITY.md).
+the controls there; storage choice only limits theft *at rest*. Full statement: [SECURITY.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/SECURITY.md).
 
 No biometric gate in v1: `kSecAccessControl` / `setUserAuthenticationRequired` change the failure
 surface (enrollment invalidation, cancel flows) and belong to a session-policy feature rather than to
@@ -220,7 +265,7 @@ storage. The design leaves room for an opt-in `requireUserPresence` without chan
 
 ## Zero dependencies, and why it matters
 
-`npm ls --omit=dev --all` prints an empty tree, and [CI asserts it](.github/workflows/ci.yml) on
+`npm ls --omit=dev --all` prints an empty tree, and [CI asserts it](https://github.com/AfanasievN/capacitor-token-vault/blob/main/.github/workflows/ci.yml) on
 every push. Concretely: `@capacitor/core` is a **peer** dependency (declaring it as a dependency is
 what pulls a second Capacitor into a consumer's tree); Android compiles against platform Keystore
 APIs only; iOS depends on Capacitor alone; the build is plain `tsc`, so there is no bundler chain
@@ -248,13 +293,13 @@ test would prove nothing about the part that matters.
 
 Status, honestly: the web layer and the packaging are covered by CI on every push; the native suites
 are written but have not been run yet (that is what the first CI run on this repo will tell us).
-Wiring the Android emulator job is a [good first contribution](CONTRIBUTING.md).
+Wiring the Android emulator job is a [good first contribution](https://github.com/AfanasievN/capacitor-token-vault/blob/main/CONTRIBUTING.md).
 
 The native suites are the security tests: on iOS they assert the accessibility and sync attributes;
 on Android that a second instance decrypts what the first wrote, that ciphertext differs per write
 (randomized IV), and that the plaintext never appears in the stored value.
 
-Contributions welcome — [CONTRIBUTING.md](CONTRIBUTING.md) explains the one rule that shapes every
+Contributions welcome — [CONTRIBUTING.md](https://github.com/AfanasievN/capacitor-token-vault/blob/main/CONTRIBUTING.md) explains the one rule that shapes every
 review: this plugin stays small.
 
 ## License
