@@ -35,6 +35,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The selling point is checkable: production tree must stay empty.
       - name: assert the production dependency tree is empty
         run: |
           tree="$(npm ls --omit=dev --all --parseable | tail -n +2)"
@@ -42,3 +43,28 @@ jobs:
             echo "unexpected runtime dependencies:"; echo "$tree"; exit 1
           fi
           echo "production dependency tree is empty"
+
+  ios:
+    name: iOS (Keychain, real attributes)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: test on an iOS simulator
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -scheme CapacitorTokenVault \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            | xcpretty
+
+  android:
+    name: Android (Keystore, instrumented)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: lint the Kotlin sources compile-only
+        run: echo "TODO: connectedAndroidTest"
