@@ -32,8 +32,8 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc public func setToken(_ call: CAPPluginCall) {
-        guard let value = call.getString("value", nil), !value.isEmpty else {
-            call.reject("value must be a non-empty string", "INVALID_ARGUMENT", nil, nil)
+        guard let value = call.options["value"] as? String, !value.isEmpty else {
+            call.reject("value must be a non-empty string")
             return
         }
         run(call) { try self.vault.set(name: self.name(from: call), value: value) }
@@ -55,7 +55,7 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     private func name(from call: CAPPluginCall) -> String {
-        call.getString("name", nil) ?? TokenVaultPlugin.defaultName
+        (call.options["name"] as? String) ?? TokenVaultPlugin.defaultName
     }
 
     /// Keychain calls block; keep them off the WebView thread.
@@ -65,9 +65,9 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
                 let result = try work()
                 call.resolve(result ?? [:])
             } catch let error as TokenVaultError {
-                call.reject(error.message, error.code, nil, nil)
+                call.reject(error.message)
             } catch {
-                call.reject("unexpected keychain failure", "STORAGE_FAILURE", nil, nil)
+                call.reject("unexpected keychain failure")
             }
         }
     }
