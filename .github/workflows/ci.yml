@@ -46,7 +46,7 @@ jobs:
 
   ios:
     name: iOS (Keychain, real attributes)
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - name: test on an iOS simulator
@@ -54,7 +54,7 @@ jobs:
           set -o pipefail
           xcodebuild test \
             -scheme CapacitorTokenVault \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
             | xcpretty
 
   android:
@@ -67,4 +67,4 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: lint the Kotlin sources compile-only
-        run: echo "TODO: connectedAndroidTest"
+        run: echo "TODO"
