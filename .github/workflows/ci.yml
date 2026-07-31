@@ -46,7 +46,7 @@ jobs:
 
   ios:
     name: iOS (Keychain, real attributes)
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       # Hits the real Keychain: round-trip, the accessibility / synchronizable attributes
@@ -54,10 +54,11 @@ jobs:
       # A simulator destination is required — `swift test` would build for macOS.
       - name: test on an iOS simulator
         run: |
+          set -o pipefail
           xcodebuild test \
             -scheme CapacitorTokenVault \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
-            | xcpretty || exit ${PIPESTATUS[0]}
+            | xcpretty
 
   android:
     name: Android (Keystore, instrumented)
