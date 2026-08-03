@@ -82,7 +82,7 @@ final class TokenVaultTests: XCTestCase {
     }
 
     /// iOS keeps Keychain items across app deletion, so a fresh install must not resume a
-    /// session it never created — possibly a different person's on a resold device.
+    /// session it never created - possibly a different person's on a resold device.
     func testTokenFromAPreviousInstallationIsNotReturned() throws {
         try vault.set(name: "refresh", value: "rt-of-previous-install")
 
@@ -112,7 +112,6 @@ final class TokenVaultTests: XCTestCase {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.afanasievn.tokenvault.tests.token-vault",
             kSecAttrAccount as String: "refresh",
-            kSecUseDataProtectionKeychain as String: true,
             kSecReturnAttributes as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]

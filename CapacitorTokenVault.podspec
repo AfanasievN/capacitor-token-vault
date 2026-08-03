@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.author = { 'AfanasievN' => 'https://github.com/AfanasievN' }
   s.source = { :git => 'https://github.com/AfanasievN/capacitor-token-vault.git', :tag => s.version.to_s }
   s.source_files = 'ios/Sources/TokenVaultPlugin/**/*.{swift,h,m,c,cc,mm,cpp}'
-  s.ios.deployment_target = '14.0'
+  s.ios.deployment_target = '15.0'
   s.dependency 'Capacitor'
   s.swift_version = '5.9'
 end

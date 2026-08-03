@@ -1,7 +1,7 @@
 # Integrating capacitor-token-vault
 
 Three shapes, from smallest to most structured. Pick the one that matches how your app is already
-built — the plugin does not care, and none of them requires configuration.
+built - the plugin does not care, and none of them requires configuration.
 
 Whichever you pick, two rules carry over:
 
@@ -16,7 +16,7 @@ Whichever you pick, two rules carry over:
       your code
           │  setToken / getToken / removeToken / clear / getCapabilities
           ▼
-   registerPlugin("TokenVault")            src/index.ts — picks the implementation
+   registerPlugin("TokenVault")            src/index.ts - picks the implementation
           │
     ┌─────┴───────────────┬────────────────────────────┐
     ▼                     ▼                            ▼
@@ -35,9 +35,9 @@ Whichever you pick, two rules carry over:
 ```
 
 The bridge files hold no logic, so the platform code is testable without Capacitor. Your app talks to
-one API and never branches on the platform — branch on `getCapabilities()` instead.
+one API and never branches on the platform - branch on `getCapabilities()` instead.
 
-## 1. Direct — small apps, one auth service
+## 1. Direct - small apps, one auth service
 
 ```ts
 // auth/tokenStorage.ts
@@ -64,13 +64,13 @@ await tokenStorage.clear();
 accessToken = null;
 ```
 
-## 2. Behind your own port — layered / hexagonal / DI projects
+## 2. Behind your own port - layered / hexagonal / DI projects
 
 If your architecture forbids features from touching infrastructure directly, declare the capability
 you need and let one adapter know the plugin exists.
 
 ```ts
-// domain/ports.ts — no plugin import here
+// domain/ports.ts - no plugin import here
 export interface TokenStore {
   load(): Promise<string | null>;
   save(token: string): Promise<void>;
@@ -79,7 +79,7 @@ export interface TokenStore {
 ```
 
 ```ts
-// infrastructure/vaultTokenStore.ts — the ONLY file that imports the plugin
+// infrastructure/vaultTokenStore.ts - the ONLY file that imports the plugin
 import {TokenVault} from "capacitor-token-vault";
 import type {TokenStore} from "../domain/ports";
 
@@ -114,7 +114,7 @@ export function createFakeTokenStore(): TokenStore {
 Angular is the same idea with an `InjectionToken`; React with a context provider; Vue with a
 composable that returns the store from `provide`/`inject`.
 
-## 3. With refresh and a fetch interceptor — the usual production shape
+## 3. With refresh and a fetch interceptor - the usual production shape
 
 Access token in memory, refresh token in the vault, one refresh shared by all concurrent 401s.
 
@@ -140,7 +140,7 @@ async function refresh(): Promise<string | null> {
       });
 
       if (res.status === 401) {
-        // The refresh token is dead — end the session.
+        // The refresh token is dead - end the session.
         await TokenVault.clear();
         accessToken = null;
         return null;
@@ -184,7 +184,7 @@ Three details worth keeping when you adapt this:
 ## Restoring the session on start
 
 ```ts
-// Boot: the vault read is fast, but it is I/O — do it before rendering the guarded screens.
+// Boot: the vault read is fast, but it is I/O - do it before rendering the guarded screens.
 export async function restoreSession(): Promise<boolean> {
   const {value} = await TokenVault.getToken();
   if (!value) return false;
@@ -211,14 +211,14 @@ if (!caps.persistent) {
 ## Platform setup you must not skip
 
 ```ts
-// capacitor.config.ts — link only the plugins you actually use
+// capacitor.config.ts - link only the plugins you actually use
 const config: CapacitorConfig = {
   includePlugins: ["capacitor-token-vault"],
 };
 ```
 
 ```xml
-<!-- android/app/src/main/AndroidManifest.xml — keep the encrypted store out of cloud backups -->
+<!-- android/app/src/main/AndroidManifest.xml - keep the encrypted store out of cloud backups -->
 <application android:allowBackup="false" ...>
 ```
 
@@ -227,10 +227,10 @@ iOS needs nothing: `WhenUnlockedThisDeviceOnly` items are never in a backup.
 ## Notes for specific setups
 
 - **SSR / prerendering (Nuxt, Next, Angular Universal)**: the web implementation is lazy-loaded on
-  first use, so importing the plugin on the server is safe — just do not *call* it there. Guard with
+  first use, so importing the plugin on the server is safe - just do not *call* it there. Guard with
   `typeof window !== "undefined"` in code that can run on both.
 - **Jest / CommonJS toolchains**: the package ships CJS as well as ESM, so `require()` works.
 - **Multiple secrets**: use named slots (`setToken({value, name: "device"})`) rather than packing
-  unrelated data into one JSON blob — `clear()` still removes all of them at logout.
+  unrelated data into one JSON blob - `clear()` still removes all of them at logout.
 - **Testing your integration**: mock the module, not the platform. `vi.mock("capacitor-token-vault")`
   or inject the fake store from pattern 2.

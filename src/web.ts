@@ -28,7 +28,7 @@ function slot(name: TokenName | undefined): string {
 
 /**
  * Session-scoped store: the browser has no secure storage, so the honest choice is
- * the smallest window instead of the longest life — `sessionStorage` (dies with the
+ * the smallest window instead of the longest life - `sessionStorage` (dies with the
  * tab), never `localStorage`. When storage is unavailable at all (private mode,
  * blocked cookies, sandboxed iframe) the plugin degrades to an in-process Map so a
  * signed-in session still works for as long as the page lives.
@@ -37,7 +37,7 @@ function resolveStorage(): {storage: Storage | null; probeFailed: boolean} {
   try {
     const candidate = globalThis.sessionStorage;
     if (!candidate) return {storage: null, probeFailed: false};
-    // Safari in private mode throws only on write — probe before trusting it.
+    // Safari in private mode throws only on write - probe before trusting it.
     const probeKey = `${KEY_PREFIX}__probe__`;
     candidate.setItem(probeKey, "1");
     candidate.removeItem(probeKey);
@@ -57,13 +57,12 @@ export class TokenVaultWeb extends WebPlugin implements TokenVaultPlugin {
   }
 
   async getCapabilities(): Promise<VaultCapabilities> {
-    const usingStorage = this.storage !== null;
     return {
-      backend: usingStorage ? "session-storage" : "memory",
+      backend: this.storage ? "session-storage" : "memory",
       // No browser store is secure against local code; say so rather than imply it.
       secure: false,
-      // sessionStorage survives a reload within the same tab; memory does not.
-      persistent: usingStorage,
+      // Neither backend survives closing the tab, so neither may power "stay signed in".
+      persistent: false,
       hardwareBacked: false,
     };
   }
@@ -104,7 +103,7 @@ export class TokenVaultWeb extends WebPlugin implements TokenVaultPlugin {
   async clear(): Promise<void> {
     try {
       if (this.storage) {
-        // Only this plugin's keys — the tab's sessionStorage belongs to the app too.
+        // Only this plugin's keys - the tab's sessionStorage belongs to the app too.
         const owned: string[] = [];
         for (let i = 0; i < this.storage.length; i += 1) {
           const key = this.storage.key(i);

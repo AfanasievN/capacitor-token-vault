@@ -1,7 +1,7 @@
 import Capacitor
 import Foundation
 
-/// Capacitor bridge. Holds no logic beyond argument plumbing — the Keychain work is in
+/// Capacitor bridge. Holds no logic beyond argument plumbing - the Keychain work is in
 /// TokenVault.swift so it can be tested without a bridge.
 @objc(TokenVaultPlugin)
 public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -25,7 +25,7 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
             "persistent": true,
             // The item is encrypted with a data-protection class key derived by the
             // hardware AES engine from the device UID, so it cannot be moved off this
-            // device. That is what the flag claims — not Secure Enclave residency, which
+            // device. That is what the flag claims - not Secure Enclave residency, which
             // applies to keys rather than payloads.
             "hardwareBacked": true,
         ])
@@ -33,7 +33,7 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc public func setToken(_ call: CAPPluginCall) {
         guard let value = call.options["value"] as? String, !value.isEmpty else {
-            call.reject("value must be a non-empty string")
+            reject(call, message: "value must be a non-empty string", code: "INVALID_ARGUMENT")
             return
         }
         run(call) { try self.vault.set(name: self.name(from: call), value: value) }
@@ -65,11 +65,18 @@ public class TokenVaultPlugin: CAPPlugin, CAPBridgedPlugin {
                 let result = try work()
                 call.resolve(result ?? [:])
             } catch let error as TokenVaultError {
-                call.reject(error.message)
+                self.reject(call, message: error.message, code: error.code, error: error)
             } catch {
-                call.reject("unexpected keychain failure")
+                self.reject(call, message: "unexpected keychain failure", code: "STORAGE_FAILURE", error: error)
             }
         }
+    }
+
+    /// Capacitor's SwiftPM binary exposes the Objective-C error handler but not the
+    /// `CAPPluginCall.reject` convenience extension. Keep rejection construction in one
+    /// place so JavaScript still receives the documented stable error code.
+    private func reject(_ call: CAPPluginCall, message: String, code: String, error: Error? = nil) {
+        call.errorHandler(CAPPluginCallError(message: message, code: code, error: error, data: nil))
     }
 
     private func run(_ call: CAPPluginCall, _ work: @escaping () throws -> Void) {

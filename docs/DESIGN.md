@@ -1,6 +1,6 @@
-# capacitor-token-vault — design
+# capacitor-token-vault - design
 
-A Capacitor plugin whose only job is to keep **one kind of secret — an auth token — in the safest
+A Capacitor plugin whose only job is to keep **one kind of secret - an auth token - in the safest
 place each platform offers**, with zero runtime dependencies.
 
 ## Why it exists
@@ -9,7 +9,7 @@ Surveyed alternatives (July 2026) each fail one requirement:
 
 | Candidate | Problem |
 | --- | --- |
-| `@capacitor/preferences` | plain `UserDefaults` / `SharedPreferences` — a token there is a plaintext file |
+| `@capacitor/preferences` | plain `UserDefaults` / `SharedPreferences` - a token there is a plaintext file |
 | `capacitor-secure-storage-plugin` | no control over Keychain accessibility or iCloud sync; pre-1.0 |
 | `@aparajita/capacitor-secure-storage` | a capable general-purpose store with the right Keychain API; different scope (arbitrary key/value) and, as published, it lists `@capacitor/app` + `@capacitor/keyboard` as dependencies, so `cap sync` links plugins a token store does not need |
 | `androidx.security` EncryptedSharedPreferences | deprecated since `security-crypto:1.1.0-alpha07` (main-thread performance, OEM keyset corruption) |
@@ -21,7 +21,7 @@ story, and no dependency we did not choose.
 ## Non-goals (deliberately narrow)
 
 1. **Not a key-value store.** A general store invites callers to put profile data, PII or caches in
-   the Keychain — the wrong tool, and it makes every consumer's security review bigger. The API takes
+   the Keychain - the wrong tool, and it makes every consumer's security review bigger. The API takes
    *tokens*: short opaque strings, a handful of named slots.
 2. **No biometric gate** in v1. `kSecAccessControl` / `setUserAuthenticationRequired` change the
    failure surface (enrollment invalidation, cancel flows) and belong to a session-policy feature,
@@ -43,7 +43,7 @@ interface VaultCapabilities {
   secure: boolean;
   /** Survives an app restart. */
   persistent: boolean;
-  /** Key material is bound to this device's hardware — see the note below; not assumed. */
+  /** Key material is bound to this device's hardware - see the note below; not assumed. */
   hardwareBacked: boolean;
 }
 
@@ -61,12 +61,12 @@ interface TokenVaultPlugin {
 `KeyInfo.securityLevel` (API 31+) or `isInsideSecureHardware`, so emulators and software-Keystore
 devices report `false`; anything unexpected also reports `false`, because a security claim defaults to
 "no". On iOS it is `true` and means the item is encrypted with a data-protection class key derived by
-the hardware AES engine from the device UID — *not* Secure Enclave residency, which applies to keys
+the hardware AES engine from the device UID - *not* Secure Enclave residency, which applies to keys
 rather than payloads.
 
 `getCapabilities()` is what makes the web story honest: a caller can see it got
 `{backend: "session-storage", secure: false, persistent: false}` and decide (our app: keep using it,
-because the alternative on web is worse — see the platform table).
+because the alternative on web is worse - see the platform table).
 
 Errors reject with a Capacitor error whose `code` is one of `UNAVAILABLE`, `INVALID_ARGUMENT`,
 `STORAGE_FAILURE`. No error message ever contains a token value.
@@ -75,19 +75,19 @@ Errors reject with a Capacitor error whose `code` is one of `UNAVAILABLE`, `INVA
 
 | Platform | Backend | Parameters (fixed by this plugin, not by the caller) |
 | --- | --- | --- |
-| iOS 14+ | Keychain, `kSecClassGenericPassword` | `kSecAttrAccessible = kSecAttrAccessibleWhenUnlockedThisDeviceOnly` (device-only ⇒ never in an iTunes/iCloud backup), `kSecAttrSynchronizable = false`, `kSecUseDataProtectionKeychain = true`, `service = "<bundleId>.token-vault"`, `account = name` |
-| Android 6+ (API 23) | `AndroidKeyStore` AES-256-GCM + app-private prefs | key alias `capacitor.token-vault.v1`, `KeyGenParameterSpec(ENCRYPT \| DECRYPT)`, `BLOCK_MODE_GCM`, `ENCRYPTION_PADDING_NONE`, `setKeySize(256)`, `setRandomizedEncryptionRequired(true)`, StrongBox when the device has it (graceful fallback); ciphertext + IV base64 in `SharedPreferences("token_vault", MODE_PRIVATE)` |
-| Web / PWA | `sessionStorage`, `memory` fallback | prefix `token-vault.`; falls back to an in-process `Map` when storage is blocked (private mode, disabled cookies). Reports `secure: false` — the browser has no secure store, and `localStorage` is deliberately never used |
+| iOS 15+ | Keychain, `kSecClassGenericPassword` | `kSecAttrAccessible = kSecAttrAccessibleWhenUnlockedThisDeviceOnly` (device-only means never in an iTunes/iCloud backup), `kSecAttrSynchronizable = false`, `service = "<bundleId>.token-vault"`, `account = name` |
+| Android 7+ (API 24) | `AndroidKeyStore` AES-256-GCM + app-private prefs | key alias `capacitor.token-vault.v1`, `KeyGenParameterSpec(ENCRYPT \| DECRYPT)`, `BLOCK_MODE_GCM`, `ENCRYPTION_PADDING_NONE`, `setKeySize(256)`, `setRandomizedEncryptionRequired(true)`; ciphertext + IV base64 in `SharedPreferences("token_vault", MODE_PRIVATE)`; hardware backing is queried, never assumed |
+| Web / PWA | `sessionStorage`, `memory` fallback | prefix `token-vault.`; falls back to an in-process `Map` when storage is blocked (private mode, disabled cookies). Reports `secure: false` - the browser has no secure store, and `localStorage` is deliberately never used |
 
 Notes that drove these choices:
 
 - **Why `WhenUnlockedThisDeviceOnly`** rather than `AfterFirstUnlock`: it is the only class that both
   requires an unlocked device and is excluded from backups/restore onto another device. The cost is
-  that background code cannot read the token while the device is locked — acceptable, because a
+  that background code cannot read the token while the device is locked - acceptable, because a
   refresh happens in response to app use.
 - **Why not `EncryptedSharedPreferences`**: deprecated (see table above). Using the Keystore directly
   is ~60 lines and has no library lifecycle risk. Backup exclusion stays the app's job (manifest
-  `allowBackup=false` or a `dataExtractionRules` exclusion for `token_vault.xml`) — a plugin cannot
+  `allowBackup=false` or a `dataExtractionRules` exclusion for `token_vault.xml`) - a plugin cannot
   edit the consumer's manifest, so the README states it as an install step.
 - **Why a versioned key alias** (`…v1`): a future parameter change (StrongBox-only, user presence)
   becomes a new alias plus a documented migration instead of silent decryption failures.
@@ -99,11 +99,11 @@ Notes that drove these choices:
 
 iOS keeps Keychain items when an app is deleted: the iOS 10.3 beta change that removed them was rolled
 back, and Apple has never documented the behavior. A freshly installed app can therefore read a token
-written by a previous installation — plausibly by a different person, on a resold or shared device.
+written by a previous installation - plausibly by a different person, on a resold or shared device.
 
-The plugin refuses to hand that back. Every write also stores a marker in `UserDefaults`, which *is*
-removed with the app; a stored token without a matching marker is treated as absent and cleared, so the
-app asks for a fresh sign-in. Android needs none of this — its preferences file goes away with the app.
+The plugin refuses to hand that back. Every write also stores a per-slot marker in `UserDefaults`,
+which *is* removed with the app; a stored token without its matching marker is treated as absent and cleared, so the
+app asks for a fresh sign-in. Android needs none of this - its preferences file goes away with the app.
 
 This is deliberately handled in the library rather than documented as a caveat: every consumer would
 otherwise have to rediscover it, and the failure mode (resuming a stranger's session) is bad enough
@@ -115,33 +115,34 @@ Protects against: another app or a shell on a rooted/jailbroken device reading t
 tokens surviving in device backups and being restored elsewhere; tokens leaking through iCloud sync.
 
 Does **not** protect against: an attacker with code execution inside the app (XSS in the WebView,
-a malicious dependency) — they can call `getToken()` like any other code. That is a CSP and
+a malicious dependency) - they can call `getToken()` like any other code. That is a CSP and
 supply-chain problem, and the README says so instead of implying more.
 
 ## Zero dependencies, concretely
 
-- npm `dependencies`: **{}**. `@capacitor/core` is a `peerDependency` — the consumer already has it,
+- npm `dependencies`: **{}**. `@capacitor/core` is a `peerDependency` - the consumer already has it,
   and declaring it as a dependency is exactly the mistake that pulls a second Capacitor into the tree.
-- Android: `compileOnly` on capacitor-android (provided by the consumer app); **no** androidx, no
-  Tink, no Gradle plugins beyond the Android one.
+- Android: Capacitor Android is supplied by the consumer and linked as a sibling project by the local
+  build harness; production code adds **no** direct AndroidX or Tink dependency.
 - iOS: SPM target and a podspec, both depending only on `Capacitor` itself; no external Swift
   packages.
-- Build: `tsc` only — twice, emitting ESM (`dist/`) and CommonJS (`dist/cjs/`, marked with a
+- Build: `tsc` only - twice, emitting ESM (`dist/`) and CommonJS (`dist/cjs/`, marked with a
   four-line generated `package.json`). No bundler, so no bundler dependency chain. Relative imports
   carry `.js` extensions and `moduleResolution: NodeNext` enforces it, because ESM output with
-  extensionless imports loads in bundlers but **not** in Node — a trap worth closing at the compiler.
-- devDependencies are limited to `typescript`, `vitest` and `@capacitor/core` (types). They never
-  reach a consumer's install.
+  extensionless imports loads in bundlers but **not** in Node - a trap worth closing at the compiler.
+- devDependencies are limited to the TypeScript/test toolchain and Capacitor's core/Android build
+  surfaces. They never reach a consumer's production dependency tree.
 
 ## Verification
 
 | Layer | How |
 | --- | --- |
 | Web implementation | vitest unit tests (storage present, storage throwing, memory fallback, name validation, capability reporting) |
-| Contract | `tsc --noEmit` in the library + a consumer smoke import |
-| iOS | XCTest against the real Keychain on a simulator destination (`xcodebuild test -destination 'platform=iOS Simulator,…'` — `swift test` builds for macOS and will not do): set/get/remove, overwrite, attribute assertions (`kSecAttrAccessible`, `synchronizable`), and the previous-installation guard |
-| Android | instrumented test (Keystore needs a device/emulator): set/get/remove, key survives process restart, ciphertext differs per write (randomized IV), plaintext absent from the stored value, `hardwareBacked` matches an independently queried `KeyInfo` |
-| End to end | consumed by an app, verified with Maestro: sign in → kill → relaunch → still signed in |
+| Contract and package | `tsc --noEmit`, ESM import, CommonJS require, and archive-content checks |
+| iOS in CI | Library compile plus pure ownership-marker tests on an iOS simulator |
+| iOS hosted integration | App-hosted XCTest with Keychain entitlements: set/get/remove, overwrite, attribute assertions, and inherited-item behavior |
+| Android in CI | Library build, instrumented-test compilation, and lint |
+| Android hosted integration | Instrumented tests on a device/emulator: set/get/remove, cross-instance decrypt, randomized ciphertext, plaintext absence, corruption behavior, and `hardwareBacked` reporting |
 
-Native tests need a device/emulator, so CI runs the web layer and typecheck on every push, and the
-native suites on the macOS/Android runners.
+CI compiles both native implementations and every Android instrumented test. Executing the real
+Keychain and Keystore integration suites requires app-hosted targets with the appropriate runtime.

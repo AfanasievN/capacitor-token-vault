@@ -1,17 +1,15 @@
 import Foundation
 import Security
 
-/// Keychain wrapper for token slots. Pure Foundation + Security — no Capacitor types,
+/// Keychain wrapper for token slots. Pure Foundation + Security - no Capacitor types,
 /// so it is unit-testable without a bridge (see ios/Tests).
 ///
 /// Fixed attributes (docs/DESIGN.md):
-/// - `kSecClassGenericPassword` — one item per slot, keyed by service + account.
-/// - `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` — requires an unlocked device AND
+/// - `kSecClassGenericPassword` - one item per slot, keyed by service + account.
+/// - `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` - requires an unlocked device AND
 ///   keeps the item out of iTunes/iCloud backups, so a restore onto another device
 ///   cannot carry the token with it.
-/// - `kSecAttrSynchronizable = false` — never offered to iCloud Keychain.
-/// - `kSecUseDataProtectionKeychain = true` — the modern (app-sandbox-scoped) keychain
-///   rather than the legacy file-based one.
+/// - `kSecAttrSynchronizable = false` - never offered to iCloud Keychain.
 public enum TokenVaultError: Error, Equatable {
     case invalidArgument(String)
     case storageFailure(OSStatus)
@@ -32,13 +30,41 @@ public enum TokenVaultError: Error, Equatable {
     }
 }
 
-public struct TokenVault {
-    private let service: String
+/// Tracks which named slots were written by the current app installation.
+///
+/// Keychain items can survive deletion while UserDefaults cannot. Ownership therefore has
+/// to be recorded per slot: one newly written slot must never make a different inherited
+/// slot readable after a reinstall.
+struct InstallationOwnership {
+    private static let keyPrefix = "token-vault.owned."
     private let defaults: UserDefaults
 
-    /// Marker kept in UserDefaults — which iOS *does* delete with the app, unlike the
-    /// Keychain (see `isSameInstallation`).
-    private static let installMarkerKey = "token-vault.installation"
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+    }
+
+    func owns(_ name: String) -> Bool {
+        defaults.bool(forKey: Self.keyPrefix + name)
+    }
+
+    func markOwned(_ name: String) {
+        defaults.set(true, forKey: Self.keyPrefix + name)
+    }
+
+    func removeOwnership(of name: String) {
+        defaults.removeObject(forKey: Self.keyPrefix + name)
+    }
+
+    func removeAll() {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(Self.keyPrefix) {
+            defaults.removeObject(forKey: key)
+        }
+    }
+}
+
+public struct TokenVault {
+    private let service: String
+    private let ownership: InstallationOwnership
 
     /// - Parameters:
     ///   - bundleIdentifier: the host app's bundle id; the service is derived from it so
@@ -47,25 +73,7 @@ public struct TokenVault {
     public init(bundleIdentifier: String?, defaults: UserDefaults = .standard) {
         let base = bundleIdentifier ?? "capacitor.app"
         self.service = "\(base).token-vault"
-        self.defaults = defaults
-    }
-
-    /// iOS keeps Keychain items when an app is deleted (the iOS 10.3 beta change that
-    /// removed them was rolled back, and Apple has never documented the behavior). So a
-    /// freshly installed app can find a token written by a *previous installation* — quite
-    /// possibly by a different person, on a resold or shared device.
-    ///
-    /// UserDefaults, unlike the Keychain, does go away with the app. A marker written next
-    /// to every token therefore answers "did *this* installation store it?". No marker plus
-    /// a stored item means the item is inherited: `get` treats it as absent and clears it,
-    /// so the app asks for a fresh sign-in instead of resuming a stranger's session.
-    private func isSameInstallation() -> Bool {
-        defaults.string(forKey: TokenVault.installMarkerKey) != nil
-    }
-
-    private func markInstallation() {
-        guard !isSameInstallation() else { return }
-        defaults.set(UUID().uuidString, forKey: TokenVault.installMarkerKey)
+        self.ownership = InstallationOwnership(defaults: defaults)
     }
 
     private static let namePattern = try! NSRegularExpression(pattern: "^[a-zA-Z0-9._-]{1,64}$")
@@ -83,7 +91,6 @@ public struct TokenVault {
             kSecAttrService as String: service,
             kSecAttrAccount as String: name,
             kSecAttrSynchronizable as String: false,
-            kSecUseDataProtectionKeychain as String: true,
         ]
     }
 
@@ -92,8 +99,6 @@ public struct TokenVault {
         guard let data = value.data(using: .utf8), !data.isEmpty else {
             throw TokenVaultError.invalidArgument("value must be a non-empty string")
         }
-
-        markInstallation()
 
         // Delete-then-add instead of SecItemUpdate: it is one code path and it
         // guarantees the accessibility attribute of the *new* write wins even if an
@@ -106,14 +111,16 @@ public struct TokenVault {
 
         let status = SecItemAdd(attributes as CFDictionary, nil)
         guard status == errSecSuccess else { throw TokenVaultError.storageFailure(status) }
+        ownership.markOwned(name)
     }
 
     public func get(name: String) throws -> String? {
         try validate(name: name)
 
-        // Inherited from a previous installation of this app — not ours to hand back.
-        if !isSameInstallation() {
-            try? clear()
+        // Inherited from a previous installation of this app, not ours to hand back.
+        // Remove this slot only; another slot may already belong to the current install.
+        if !ownership.owns(name) {
+            SecItemDelete(baseQuery(name: name) as CFDictionary)
             return nil
         }
 
@@ -140,20 +147,19 @@ public struct TokenVault {
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw TokenVaultError.storageFailure(status)
         }
+        ownership.removeOwnership(of: name)
     }
 
-    /// Removes every slot of this service — logout / account switch. The installation
-    /// marker stays: it says "this install owns whatever is here", and after a wipe there
-    /// is nothing to disown.
+    /// Removes every slot of this service and its installation ownership marker.
     public func clear() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecUseDataProtectionKeychain as String: true,
         ]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw TokenVaultError.storageFailure(status)
         }
+        ownership.removeAll()
     }
 }

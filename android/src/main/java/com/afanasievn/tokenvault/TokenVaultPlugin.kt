@@ -8,7 +8,7 @@ import com.getcapacitor.annotation.CapacitorPlugin
 import java.util.concurrent.Executors
 
 /**
- * Capacitor bridge. Argument plumbing only — the Keystore work lives in TokenVault.kt so
+ * Capacitor bridge. Argument plumbing only - the Keystore work lives in TokenVault.kt so
  * it can be tested without a bridge.
  */
 @CapacitorPlugin(name = "TokenVault")
@@ -81,6 +81,11 @@ class TokenVaultPlugin : Plugin() {
                 call.reject("unexpected keystore failure (${e.javaClass.simpleName})", "STORAGE_FAILURE")
             }
         }
+    }
+
+    override fun handleOnDestroy() {
+        io.shutdown()
+        super.handleOnDestroy()
     }
 
     companion object {

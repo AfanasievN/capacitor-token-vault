@@ -1,4 +1,4 @@
-// Zero third-party dependencies: capacitor-android is provided by the consumer app,
+// Zero third-party runtime dependencies: capacitor-android is provided by the consumer app,
 // and the Keystore/GCM APIs are part of the platform (no androidx.security).
 ext {
     junitVersion = project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.13.2'
@@ -24,7 +24,7 @@ android {
     namespace "com.afanasievn.tokenvault"
     compileSdk project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 36
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 23
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
         targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 36
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

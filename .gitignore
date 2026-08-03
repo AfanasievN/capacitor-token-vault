@@ -3,6 +3,7 @@ dist/
 .DS_Store
 *.log
 .build/
+/Package.resolved
 android/build/
 android/.gradle/
 ios/.build/

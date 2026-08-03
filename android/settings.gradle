@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'capacitor-token-vault'
+
+include ':capacitor-android'
+project(':capacitor-android').projectDir = file('../node_modules/@capacitor/android/capacitor')

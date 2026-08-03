@@ -1,0 +1,62 @@
+name: Bug report
+description: Report reproducible behavior in the plugin
+title: "[Bug]: "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a problem. Never include a real token, secret, or production log containing credentials.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version or commit
+      placeholder: 0.1.0 or a commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - iOS
+        - Android
+        - Web
+        - Package or tooling
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Capacitor, OS, Xcode or Android Gradle Plugin, and Node versions as relevant.
+      placeholder: Capacitor 8.5, iOS 18.5, Xcode 17
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Give the smallest safe example and exact steps. Replace all token values with placeholders.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed all real tokens, secrets, private URLs, and identifying production data.
+          required: true
+        - label: I checked the README and existing issues first.
+          required: true
