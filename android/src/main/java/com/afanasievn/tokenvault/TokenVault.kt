@@ -16,17 +16,17 @@ import javax.crypto.spec.GCMParameterSpec
 
 /**
  * Token slots encrypted with an AES-256-GCM key that never leaves the Android Keystore
- * (docs/DESIGN.md). No androidx.security dependency — EncryptedSharedPreferences is
+ * (docs/DESIGN.md). No androidx.security dependency - EncryptedSharedPreferences is
  * deprecated (security-crypto 1.1.0-alpha07) and the Keystore API is enough for a value
  * this small.
  *
  * Storage layout: SharedPreferences file "token_vault" (MODE_PRIVATE), one entry per
  * slot, value = base64(iv) + ":" + base64(ciphertext). The IV is random per write
  * (setRandomizedEncryptionRequired), so writing the same token twice yields different
- * bytes — no equality oracle on disk.
+ * bytes - no equality oracle on disk.
  *
  * Excluding this file from cloud backups is the host app's job (manifest
- * `allowBackup=false` or a dataExtractionRules exclusion) — a library cannot edit it.
+ * `allowBackup=false` or a dataExtractionRules exclusion) - a library cannot edit it.
  */
 class TokenVaultException(val code: String, message: String) : Exception(message)
 
@@ -75,19 +75,23 @@ class TokenVault(context: Context) {
 
     fun remove(name: String) {
         validate(name)
-        prefs.edit().remove(name).apply()
+        if (!prefs.edit().remove(name).commit()) {
+            throw TokenVaultException("STORAGE_FAILURE", "could not remove the token slot")
+        }
     }
 
     /** Removes every slot. The Keystore key is kept: a new sign-in reuses it. */
     fun clear() {
-        prefs.edit().clear().apply()
+        if (!prefs.edit().clear().commit()) {
+            throw TokenVaultException("STORAGE_FAILURE", "could not clear the token vault")
+        }
     }
 
     /**
      * Whether the key protecting the tokens is held in secure hardware (TEE or StrongBox).
      * Asked of the platform, never assumed: on emulators and on devices with a software
      * Keystore this is genuinely `false`, and a caller that branches on it must not be
-     * told otherwise. Anything unexpected also yields `false` — a security claim defaults
+     * told otherwise. Anything unexpected also yields `false` - a security claim defaults
      * to "no".
      */
     fun isHardwareBacked(): Boolean = try {

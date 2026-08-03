@@ -16,7 +16,7 @@ The latest minor release receives fixes. Until 1.0 there are no backports to ear
 
 ## What this plugin does and does not defend against
 
-**In scope** — the reason the plugin exists:
+**In scope** - the reason the plugin exists:
 
 - another app, or a shell on a rooted/jailbroken device, reading the token off disk;
 - the token surviving in a device backup and being restored onto another device;
@@ -33,6 +33,6 @@ The latest minor release receives fixes. Until 1.0 there are no backports to ear
   never uses `localStorage`.
 - **Token lifetime and revocation.** Rotation, reuse detection and expiry are server-side concerns.
 
-If you find a case where the plugin's *own* behavior weakens one of the in-scope guarantees — a
-wrong Keychain attribute, a reused IV, a plaintext write, a secret in an error message — that is a
+If you find a case where the plugin's *own* behavior weakens one of the in-scope guarantees - a
+wrong Keychain attribute, a reused IV, a plaintext write, a secret in an error message - that is a
 vulnerability in this project and the report is very welcome.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/AfanasievN/capacitor-token-vault/security/advisories/new
+    about: Report vulnerabilities privately. Do not open a public issue.
+  - name: Integration and usage
+    url: https://github.com/AfanasievN/capacitor-token-vault/issues/new?template=01-bug-report.yml
+    about: Ask a reproducible integration question using the bug template.

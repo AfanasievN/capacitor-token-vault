@@ -58,7 +58,7 @@ class TokenVaultInstrumentedTest {
         assertNull(vault.get("secondary"))
     }
 
-    /** A new instance must decrypt what the previous one wrote — the key is in the Keystore,
+    /** A new instance must decrypt what the previous one wrote - the key is in the Keystore,
      *  not in the process. This is what makes "session survives restart" true. */
     @Test
     fun anotherInstanceReadsTheSameValue() {
@@ -93,7 +93,7 @@ class TokenVaultInstrumentedTest {
     }
 
     /**
-     * hardwareBacked must report what the Keystore says — not a constant. Emulators
+     * hardwareBacked must report what the Keystore says - not a constant. Emulators
      * typically answer false, real devices true, so the assertion is "matches an
      * independently asked platform", which is what catches a regression to `true`.
      */
@@ -126,7 +126,7 @@ class TokenVaultInstrumentedTest {
         vault.set("refresh", "")
     }
 
-    /** A corrupted slot degrades to "absent" instead of throwing — a broken value must not
+    /** A corrupted slot degrades to "absent" instead of throwing - a broken value must not
      *  prevent a fresh sign-in. */
     @Test
     fun corruptSlotReadsAsNull() {

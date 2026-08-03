@@ -3,7 +3,7 @@
  *
  * Scope on purpose: tokens, not arbitrary data. A general key-value store in the
  * Keychain invites profile data and caches into a place that should hold exactly
- * one class of secret — and makes every consumer's security review larger.
+ * one class of secret - and makes every consumer's security review larger.
  */
 
 /**
@@ -21,7 +21,7 @@ export interface VaultCapabilities {
   backend: VaultBackend;
   /**
    * The OS keeps the value outside storage that other app code on the device can
-   * read. False on the web — no browser has a secure store, and pretending
+   * read. False on the web - no browser has a secure store, and pretending
    * otherwise is how tokens end up in `localStorage`.
    */
   secure: boolean;
@@ -33,7 +33,7 @@ export interface VaultCapabilities {
    *
    * - **Android**: asked of the Keystore per key (`KeyInfo.securityLevel` on API 31+,
    *   `isInsideSecureHardware` below that). Genuinely `false` on emulators and on devices
-   *   with a software Keystore — branch on the value, do not assume `true`.
+   *   with a software Keystore - branch on the value, do not assume `true`.
    * - **iOS**: `true`. The item is encrypted with a data-protection class key that the
    *   hardware AES engine derives from the device UID; note that this is *not* the same as
    *   living inside the Secure Enclave, which holds keys rather than arbitrary payloads.
@@ -56,12 +56,12 @@ export interface TokenVaultPlugin {
   /** Writes (or overwrites) the token in the slot. */
   setToken(options: {value: string; name?: TokenName}): Promise<void>;
 
-  /** Reads the slot. `value` is `null` when nothing is stored — not an error. */
+  /** Reads the slot. `value` is `null` when nothing is stored - not an error. */
   getToken(options?: {name?: TokenName}): Promise<{value: string | null}>;
 
   /** Removes one slot. Removing an empty slot succeeds (idempotent). */
   removeToken(options?: {name?: TokenName}): Promise<void>;
 
-  /** Removes every slot this plugin owns — logout, account switch, wipe. */
+  /** Removes every slot this plugin owns - logout, account switch, wipe. */
   clear(): Promise<void>;
 }

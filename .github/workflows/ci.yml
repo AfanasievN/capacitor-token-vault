@@ -8,63 +8,92 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  web:
-    name: web + contract (node ${{ matrix.node }})
+  library:
+    name: Library checks (Node.js ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         node: [20, 22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - if: matrix.node == 24
+        run: npm pack --dry-run
 
   dependency-budget:
-    name: zero runtime dependencies
+    name: Zero runtime dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
-      # The selling point is checkable: production tree must stay empty.
-      - name: assert the production dependency tree is empty
+      - name: Assert the production dependency tree is empty
+        shell: bash
         run: |
           tree="$(npm ls --omit=dev --all --parseable | tail -n +2)"
           if [ -n "$tree" ]; then
-            echo "unexpected runtime dependencies:"; echo "$tree"; exit 1
+            echo "Unexpected runtime dependencies:"
+            echo "$tree"
+            exit 1
           fi
-          echo "production dependency tree is empty"
-
-  ios:
-    name: iOS (Keychain, real attributes)
-    runs-on: macos-14
-    steps:
-      - uses: actions/checkout@v4
-      - name: test on an iOS simulator
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -scheme CapacitorTokenVault \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
-            | xcpretty
+          echo "Production dependency tree is empty."
 
   android:
-    name: Android (Keystore, instrumented)
+    name: Android native build and test compilation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Set up Java
+        uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
         with:
           distribution: temurin
           java-version: 21
-      - name: lint the Kotlin sources compile-only
-        run: echo "TODO"
+      - run: npm ci
+      - name: Compile library, instrumented tests, and lint
+        run: ./android/gradlew -p android assembleDebug assembleDebugAndroidTest lintDebug --no-daemon
+
+  ios:
+    name: iOS native build and ownership tests
+    runs-on: macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Compile plugin for iOS Simulator
+        run: >-
+          xcodebuild build
+          -scheme CapacitorTokenVault
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+      - name: Test installation ownership logic
+        shell: bash
+        run: |
+          destination_id="$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.isAvailable == true and (.name | startswith("iPhone")))] | first | .udid')"
+          test -n "$destination_id"
+          xcodebuild test \
+            -scheme CapacitorTokenVault \
+            -destination "platform=iOS Simulator,id=${destination_id}" \
+            -only-testing:TokenVaultPluginTests/InstallationOwnershipTests

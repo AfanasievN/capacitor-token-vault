@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 
 import {TokenVaultWeb} from "../web.js";
 
-/** Minimal Storage double — sessionStorage semantics, with hooks to make it misbehave. */
+/** Minimal Storage double - sessionStorage semantics, with hooks to make it misbehave. */
 function createStorage(overrides: {failWrites?: boolean} = {}): Storage {
   const map = new Map<string, string>();
   return {
@@ -36,7 +36,7 @@ describe("TokenVaultWeb", () => {
     expect(await vault.getCapabilities()).toEqual({
       backend: "session-storage",
       secure: false,
-      persistent: true,
+      persistent: false,
       hardwareBacked: false,
     });
 

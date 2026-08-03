@@ -2,10 +2,10 @@
 import PackageDescription
 
 // Capacitor 8 iOS projects are SPM-based; the podspec is kept for CocoaPods consumers.
-// The only dependency is Capacitor itself — no third-party Swift packages.
+// The only dependency is Capacitor itself - no third-party Swift packages.
 let package = Package(
     name: "CapacitorTokenVault",
-    platforms: [.iOS(.v14)],
+    platforms: [.iOS(.v15)],
     products: [
         .library(
             name: "CapacitorTokenVault",

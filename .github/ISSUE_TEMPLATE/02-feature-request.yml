@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a focused change to token storage
+title: "[Feature]: "
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: This project deliberately stores tokens, not arbitrary application data. Please explain the security use case and safe default.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What token-storage problem cannot be solved with the current API?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and compatibility impact
+      description: Cover storage format, migration, platform behavior, and failure modes.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe workarounds or narrower approaches you considered.
+    validations:
+      required: true

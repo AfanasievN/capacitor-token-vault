@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for looking at this. The plugin is small on purpose, and keeping it small is the main
-review criterion — please read this before opening a change.
+review criterion - please read this before opening a change.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -19,7 +19,7 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
    weaken them. If an option is genuinely needed, explain the use case and the safe default.
 4. **Changing the stored format needs a migration.** The Android key alias is versioned
    (`capacitor.token-vault.v1`) for exactly this: bump it and describe the migration, never change
-   parameters under an existing alias — that turns into silent decryption failures on real installs.
+   parameters under an existing alias - that turns into silent decryption failures on real installs.
 5. **A broken vault must never lock a user out.** Corrupt or undecryptable slots read as "absent"
    so the app can ask for a fresh sign-in. Do not turn these into thrown errors.
 6. **No secret in an error, log or test name.** Messages carry error *types*, never values. There is
@@ -32,10 +32,9 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Good first contributions
 
-- Device/OS compatibility reports — "works / fails on X with Y" is a genuinely useful issue even
+- Device/OS compatibility reports - "works / fails on X with Y" is a genuinely useful issue even
   without code.
-- Wiring the Android instrumented suite into CI with an emulator runner (see the TODO in
-  `.github/workflows/ci.yml`).
+- Adding small app-hosted test fixtures for the real iOS Keychain and Android Keystore suites.
 - An example app showing the plugin behind an app's own storage port.
 - Documentation: clarifying the threat model or the install steps a plugin cannot do for you.
 
@@ -43,18 +42,23 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ```bash
 npm install
-npm run verify        # typecheck + web unit tests + build
-swift test            # iOS, needs macOS + Xcode (real Keychain)
+npm run verify
+./android/gradlew -p android assembleDebug assembleDebugAndroidTest lintDebug
+xcodebuild build -scheme CapacitorTokenVault \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -scheme CapacitorTokenVault \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:TokenVaultPluginTests/InstallationOwnershipTests
 ```
 
-Android instrumented tests need a device or emulator and a host app —
-`./gradlew connectedAndroidTest` from a consumer project. Say in the PR which of these you ran;
-"web only" is fine and honest, and reviewers will run the rest.
+Android Keystore tests need a device or emulator. Real Keychain tests need an app-hosted test target
+with Keychain entitlements. Say in the PR which checks you ran; a partial but honest verification
+statement is useful.
 
 ## Pull requests
 
 Describe what changed and why, which platforms you verified on, and anything you deliberately did
 not do. If a change alters the security posture (storage location, attributes, error behavior), say
-so explicitly in the description — that is the part that gets the closest read.
+so explicitly in the description - that is the part that gets the closest read.
 
 Open an issue first for API changes and for anything that widens the plugin's scope.

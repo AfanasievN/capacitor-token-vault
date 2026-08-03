@@ -1,7 +1,7 @@
 # Integrating with an AI agent
 
 Copy a prompt, paste it into Claude Code / Cursor / Copilot / Codex with your repository open. Each
-one is written so the agent adapts to *your* architecture instead of pasting a fixed snippet — and so
+one is written so the agent adapts to *your* architecture instead of pasting a fixed snippet - and so
 it cannot quietly get the security-relevant parts wrong.
 
 If your agent can read URLs, point it at
@@ -14,13 +14,16 @@ it is the whole contract and every rule in one page.
 Add capacitor-token-vault (https://github.com/AfanasievN/capacitor-token-vault) to this app to store
 the refresh token.
 
+Until the first npm release, install it with
+`npm install github:AfanasievN/capacitor-token-vault#main`, then run `npx cap sync`.
+
 Read docs/INTEGRATION.md from the package (or the repo) first, then match MY architecture:
 - If the project has ports/interfaces or a DI container, put the plugin behind one adapter and wire it
   where dependencies are composed. Feature code must not import the plugin.
 - If it is a small app with a single auth service, use it directly there.
 
 Rules that are not negotiable:
-1. Persist ONLY the refresh token. The access token stays in memory — never in the vault, never in
+1. Persist ONLY the refresh token. The access token stays in memory - never in the vault, never in
    localStorage.
 2. Do not store anything other than tokens in the vault.
 3. Call getCapabilities() and use `persistent` to decide whether the UI may offer "stay signed in".
@@ -28,7 +31,7 @@ Rules that are not negotiable:
 4. Add `includePlugins: ["capacitor-token-vault"]` to capacitor.config.ts.
 5. On Android, keep the store out of cloud backups (`allowBackup=false` or a dataExtractionRules
    exclusion for token_vault.xml).
-6. Reading an empty slot returns {value: null} — that is normal, not an error. Do not treat it as one.
+6. Reading an empty slot returns {value: null} - that is normal, not an error. Do not treat it as one.
 
 Then show me the diff and tell me which files now know that this plugin exists.
 ```
@@ -48,7 +51,7 @@ Follow docs/INTEGRATION.md pattern 3 and keep these properties:
 - If the backend rotates refresh tokens, store the new one after every refresh.
 
 Wire it into the HTTP client this project already uses (fetch wrapper, axios interceptor, Angular
-HttpInterceptor — whatever is here), not a new one. Add tests for the single-flight and
+HttpInterceptor - whatever is here), not a new one. Add tests for the single-flight and
 "transient error does not log out" cases.
 ```
 
@@ -108,4 +111,4 @@ outright rather than hoping:
   wrong on an installed PWA, in a private-mode tab and on an emulator.
 
 If an agent produces something that violates one of these, the fix is usually to paste the relevant
-rule back at it — they are all short and testable.
+rule back at it - they are all short and testable.
