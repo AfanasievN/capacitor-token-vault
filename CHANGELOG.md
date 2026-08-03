@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] - 2026-08-03
 
 ### Added
 
@@ -20,6 +20,7 @@ All notable changes to this project are documented here. The format follows
   release checklist.
 - CI checks for the npm archive, both JS module formats, Android build/test compilation/lint, iOS
   compilation and ownership tests, dependency review, and multi-language CodeQL analysis.
+- Project funding links for GitHub Sponsors, thanks.dev, and TON donations.
 
 ### Changed
 
