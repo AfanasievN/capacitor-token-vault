@@ -17,13 +17,31 @@ runtime dependencies**.
 [Quick start](#quick-start) · [Integration patterns](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/INTEGRATION.md) ·
 [AI prompts](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/AI.md) · [Compatibility](#compatibility) ·
 [What each platform does](#what-each-platform-actually-does) · [Threat model](#threat-model) ·
-[FAQ](#faq) · [Design notes](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md)
+[FAQ](#faq) · [Design notes](https://github.com/AfanasievN/capacitor-token-vault/blob/main/docs/DESIGN.md) ·
+[Support ☕](#support-this-project)
 
 ```ts
 await TokenVault.setToken({value: refreshToken});
 const {value} = await TokenVault.getToken();   // string | null
 await TokenVault.clear();                      // logout
 ```
+
+## Support this project
+
+Free and open source, maintained in spare time — a donation helps fund security updates, fixes,
+documentation, and new releases. 🙏 [Sponsor AfanasievN on GitHub](https://github.com/sponsors/AfanasievN),
+or donate in **TON**: [![Donate TON](https://img.shields.io/badge/Donate-TON-0098EA)](https://app.tonkeeper.com/transfer/UQAMfkOwBBk_TZyn7LP2o9UgMrNW3GCLs3IJKOVxYBdzr0IK)
+
+<details>
+<summary>Donate via QR / address</summary>
+
+<img src="docs/images/donate-ton-qr.png" alt="Donate TON — scan with any TON wallet" width="200" />
+
+```
+UQAMfkOwBBk_TZyn7LP2o9UgMrNW3GCLs3IJKOVxYBdzr0IK
+```
+
+</details>
 
 ## Why another storage plugin
 
