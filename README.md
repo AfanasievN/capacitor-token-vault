@@ -61,12 +61,9 @@ accidentally weaken.
 ## Quick start
 
 ```bash
-npm install github:AfanasievN/capacitor-token-vault#main
+npm install capacitor-token-vault
 npx cap sync
 ```
-
-The package name is not published on npm yet. The GitHub install above runs the package build during
-installation. After the first npm release, the command becomes `npm install capacitor-token-vault`.
 
 Two install steps a plugin cannot do for you:
 

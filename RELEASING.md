@@ -1,13 +1,18 @@
 # Releasing
 
-Releases are intentionally manual until the npm package name and trusted-publisher configuration are owned by the maintainer. This avoids a release workflow that looks complete but fails at publication time.
+GitHub releases publish to npm through OpenID Connect (OIDC). The workflow receives a short-lived credential from npm, so the repository does not store an `NPM_TOKEN` secret.
 
-## One-time setup
+## Registry configuration
 
-1. Claim `capacitor-token-vault` on npm.
-2. Configure npm trusted publishing for this GitHub repository and the release workflow that will publish it.
-3. Require the CI, CodeQL, and dependency-review checks on `main`.
-4. Add the npm package URL as the GitHub repository homepage after the first publication.
+The public package is [`capacitor-token-vault`](https://www.npmjs.com/package/capacitor-token-vault). Its GitHub Actions trusted publisher uses these exact values:
+
+- Organization or user: `AfanasievN`
+- Repository: `capacitor-token-vault`
+- Workflow filename: `publish.yml`
+- Environment: leave empty
+- Allowed action: `npm publish`
+
+Under **Publishing access**, select **Require two-factor authentication and disallow tokens**. Require the CI, CodeQL, and dependency-review checks on `main` before creating a release.
 
 ## Release checklist
 
@@ -15,7 +20,10 @@ Releases are intentionally manual until the npm package name and trusted-publish
 2. Set the package version with `npm version <patch|minor|major>`.
 3. Run `npm ci`, `npm run verify`, and `npm pack --dry-run`.
 4. Build Android and iOS using the commands in `CONTRIBUTING.md`.
-5. Push the version commit and tag, wait for all required checks, then publish from a clean checkout.
-6. Create a GitHub release from the same tag and paste the matching changelog section.
+5. Push the version commit and tag, then wait for all required checks.
+6. Create a GitHub release from the same tag and paste the matching changelog section. Publishing the release triggers `.github/workflows/publish.yml`, which verifies the tag and package before publishing to npm.
+7. Confirm the workflow succeeded and verify the version and provenance on npm.
+
+The workflow can be run manually for an existing GitHub release by supplying its tag. It refuses tags that do not match the version in `package.json`.
 
 Do not publish with `--ignore-scripts`: package verification is part of the release gate.
