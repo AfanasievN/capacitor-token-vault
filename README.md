@@ -2,6 +2,7 @@
 
 <p align="center">A focused, zero-runtime-dependency vault for refresh tokens in Capacitor 8 applications.</p>
 
+[![npm version](https://img.shields.io/npm/v/capacitor-token-vault?logo=npm&color=CB3837)](https://www.npmjs.com/package/capacitor-token-vault)
 [![CI](https://github.com/AfanasievN/capacitor-token-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/AfanasievN/capacitor-token-vault/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/AfanasievN/capacitor-token-vault/actions/workflows/codeql.yml/badge.svg)](https://github.com/AfanasievN/capacitor-token-vault/actions/workflows/codeql.yml)
 [![runtime dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)](#zero-dependencies-and-why-it-matters)
