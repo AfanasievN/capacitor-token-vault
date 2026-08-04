@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/AfanasievN/capacitor-token-vault/issues"
   },
-  "homepage": "https://github.com/AfanasievN/capacitor-token-vault#readme",
+  "homepage": "https://www.npmjs.com/package/capacitor-token-vault",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",

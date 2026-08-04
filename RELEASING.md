@@ -2,28 +2,17 @@
 
 GitHub releases publish to npm through OpenID Connect (OIDC). The workflow receives a short-lived credential from npm, so the repository does not store an `NPM_TOKEN` secret.
 
-## One-time setup
+## Registry configuration
 
-1. Sign in to npm with two-factor authentication and publish `v0.1.0` once from a clean checkout to claim `capacitor-token-vault`:
+The public package is [`capacitor-token-vault`](https://www.npmjs.com/package/capacitor-token-vault). Its GitHub Actions trusted publisher uses these exact values:
 
-   ```sh
-   git switch --detach v0.1.0
-   npm ci
-   npm run verify
-   npm publish --access public
-   ```
+- Organization or user: `AfanasievN`
+- Repository: `capacitor-token-vault`
+- Workflow filename: `publish.yml`
+- Environment: leave empty
+- Allowed action: `npm publish`
 
-2. In the package settings on npm, add a GitHub Actions trusted publisher with these exact values:
-
-   - Organization or user: `AfanasievN`
-   - Repository: `capacitor-token-vault`
-   - Workflow filename: `publish.yml`
-   - Environment: leave empty
-   - Allowed action: `npm publish`
-
-3. Under **Publishing access**, select **Require two-factor authentication and disallow tokens**.
-4. Require the CI, CodeQL, and dependency-review checks on `main`.
-5. Add the npm package URL as the GitHub repository homepage after the first publication.
+Under **Publishing access**, select **Require two-factor authentication and disallow tokens**. Require the CI, CodeQL, and dependency-review checks on `main` before creating a release.
 
 ## Release checklist
 
