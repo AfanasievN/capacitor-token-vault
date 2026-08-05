@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-05
+
+### Fixed
+
+- The npm package README now shows the registry install command (`npm install capacitor-token-vault`)
+  instead of the temporary GitHub installation used before the first npm release.
+
 ## [0.1.0] - 2026-08-03
 
 ### Added

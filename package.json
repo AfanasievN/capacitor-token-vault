@@ -1,6 +1,6 @@
 {
   "name": "capacitor-token-vault",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Capacitor plugin that keeps auth tokens in iOS Keychain, Android Keystore, and sessionStorage on the web. Zero runtime dependencies.",
   "author": "AfanasievN (https://github.com/AfanasievN)",
   "license": "MIT",
